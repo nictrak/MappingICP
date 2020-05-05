@@ -4,8 +4,9 @@ FILE = 'map.txt'
 
 
 def save_override_map(data):
+    file = open(FILE, 'w')
     # TODO
-    pass
+    file.close()
 
 
 def load_map():

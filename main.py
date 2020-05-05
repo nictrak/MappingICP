@@ -2,6 +2,7 @@ from rplidar import RPLidar
 import matplotlib.pyplot as plt
 from matplotlib import colors
 from occupancy_grid import *
+from map_saver import *
 
 PORT = 'COM24'
 MIN_RANGE = -8000
@@ -39,6 +40,8 @@ def main():
     plt.colorbar()
     plt.grid()
     plt.show()
+    # file save
+    save_override_map(occupancy_grid)
 
 
 if __name__ == '__main__':
