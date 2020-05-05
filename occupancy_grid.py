@@ -30,11 +30,11 @@ def _project_point_onto_origin(point, num, origin=np.array([0, 0])):
     # calculate y space from x space
     y_space = np.array(list(map(lambda a: slope * a, x_space)))
     # wrap up result
-    data = np.array([x_space.T, y_space.T])
+    data = np.array([x_space, y_space])
     return data
 
 
-def project_points_onto_origin(points, length, grid_x, grid_y, origin=np.array([0, 0])):
+def project_points_onto_origin(points, length, origin=np.array([0, 0])):
     """
     :param points: 2D points array
     :param length: length between points in line space
@@ -49,20 +49,22 @@ def project_points_onto_origin(points, length, grid_x, grid_y, origin=np.array([
     # find distances from origins
     distances = map(lambda trans: math.sqrt(trans[0]**2 + trans[1]**2), translation_matrix)
     # find number of points for line space
-    nums = map(lambda dist: dist/length, distances)
+    nums = map(lambda dist: int(dist//length), distances)
     # project all
-    projections = map(lambda p, n: _project_point_onto_origin(p, n, origin), points_t, nums)
+    projections = reduce(lambda array0, array1: np.concatenate((array0, array1), axis=0), map(lambda p, n: _project_point_onto_origin(p, n, origin).T, points_t, nums)).T
     return projections
 
 
 def cal_positive_grid(points, grid_x, grid_y):
     positive_grid, _, _ = np.histogram2d(points[0], points[1], bins=[grid_x, grid_y])
-    return positive_grid
+    return positive_grid * 0.5
 
 
-def cal_negative_grid(points, grid_x, grid_y):
-    # TODO
-    pass
+def cal_negative_grid(points, length, grid_x, grid_y, origin=np.array([0, 0])):
+    projections = project_points_onto_origin(points, length, origin)
+    raw_grid, _, _ = np.histogram2d(projections[0], projections[1], bins=[grid_x, grid_y])
+    negative_grid = raw_grid * -0.8
+    return negative_grid
 
 
 def _cal_prop(value):
@@ -74,6 +76,6 @@ def cal_occupancy_grid(grid):
     return np.array(list(map(lambda x: x, map(_cal_prop, grid))))
 
 
-def update_grid(grid, data, grid_x, grid_y):
+def update_grid(grid, data, length, grid_x, grid_y, origin=np.array([0, 0])):
     points = np.array(list(map(raw_to_point, data))).T
-    return grid + cal_positive_grid(points, grid_x, grid_y)
+    return grid + cal_positive_grid(points, grid_x, grid_y) + cal_negative_grid(points, length, grid_x, grid_y, origin)
