@@ -1,16 +1,16 @@
 import numpy as np
 
-FILE = 'map.txt'
+FILE = 'map'
 
 
 def save_override_map(data):
-    file = open(FILE, 'w')
-    # TODO
-    file.close()
+    print("...saving")
+    np.save(FILE, data)
+    print("save complete")
 
 
 def load_map():
-    # TODO
-    pass
+    np.load(FILE)
+    return np.array(np.load(FILE))
 
 
