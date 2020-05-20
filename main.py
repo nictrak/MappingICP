@@ -3,6 +3,8 @@ import matplotlib.pyplot as plt
 from matplotlib import colors
 from occupancy_grid import *
 from map_saver import *
+from icp import *
+import time
 
 PORT = 'COM24'
 MIN_RANGE = -8000
@@ -20,6 +22,7 @@ def main():
     print(health)
     # setup value
     points = np.array([[], []])
+    previous = np.array([[], []])
     grid_x = np.linspace(MIN_RANGE, MAX_RANGE, GRID_POINTS)
     grid_y = np.linspace(MIN_RANGE, MAX_RANGE, GRID_POINTS)
     grid = cal_positive_grid(points, grid_x, grid_y)
@@ -28,7 +31,10 @@ def main():
         raw = filter(lambda element: element[1] >= 270 or element[1] <= 90, scan)
         points = transform_raw(raw)
         grid = update_grid(grid, points.T, GRID_LENGTH, grid_x, grid_y)
-        if i > 50:
+        if i > 2 and len(previous) >= 40 and len(points) >= 40:
+            icp(previous[0:40].T, points[0:40].T)
+        previous = points
+        if i > 1000:
             break
     # stop RPlidar
     lidar.stop()
