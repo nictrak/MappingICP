@@ -76,9 +76,12 @@ def cal_occupancy_grid(grid):
     return np.array(list(map(lambda x: x, map(_cal_prop, grid))))
 
 
-def update_grid(grid, data, length, grid_x, grid_y, origin=np.array([0, 0])):
-    points = np.array(list(map(raw_to_point, data))).T
-    return grid + cal_positive_grid(points, grid_x, grid_y) + cal_negative_grid(points, length, grid_x, grid_y, origin)
+def transform_raw(raw):
+    return np.array(list(map(raw_to_point, raw)))
+
+
+def update_grid(grid, points_t, length, grid_x, grid_y, origin=np.array([0, 0])):
+    return grid + cal_positive_grid(points_t, grid_x, grid_y) + cal_negative_grid(points_t, length, grid_x, grid_y, origin)
 
 
 def occupancy_grid_to_points(occupancy_grid, min_value, max_value, length, threshold=0.95):

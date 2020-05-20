@@ -25,7 +25,9 @@ def main():
     grid = cal_positive_grid(points, grid_x, grid_y)
     # loop while mapping
     for i, scan in enumerate(lidar.iter_scans()):
-        grid = update_grid(grid, scan, GRID_LENGTH, grid_x, grid_y)
+        raw = filter(lambda element: element[1] >= 270 or element[1] <= 90, scan)
+        points = transform_raw(raw)
+        grid = update_grid(grid, points.T, GRID_LENGTH, grid_x, grid_y)
         if i > 50:
             break
     # stop RPlidar
