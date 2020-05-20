@@ -14,3 +14,5 @@ def load_map():
     return np.array(np.load(FILE))
 
 
+
+
