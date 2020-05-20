@@ -24,7 +24,6 @@ def random_filter(previous, current):
     len_pre = len(previous)
     len_cur = len(current)
     diff = len_cur - len_pre
-    print(len_pre, len_cur, diff)
     if diff > 20 or diff < -20:
         return np.array([]), np.array([])
     if diff == 0:
@@ -46,6 +45,8 @@ def main():
     # setup value
     points = np.array([[], []])
     previous = np.array([[], []])
+    degrees = 0
+    slide = np.array([0, 0])
     grid_x = np.linspace(MIN_RANGE, MAX_RANGE, GRID_POINTS)
     grid_y = np.linspace(MIN_RANGE, MAX_RANGE, GRID_POINTS)
     grid = cal_positive_grid(points, grid_x, grid_y)
@@ -53,13 +54,20 @@ def main():
     for i, scan in enumerate(lidar.iter_scans(min_len=60)):
         raw = filter(lambda element: element[1] >= 270 or element[1] <= 90, scan)
         points = transform_raw(raw)
-        grid = update_grid(grid, points.T, GRID_LENGTH, grid_x, grid_y)
+        grid = update_grid(grid, points.T, GRID_LENGTH, grid_x, grid_y, origin=slide)
         pre, cur = random_filter(previous, points)
         if len(pre) > 0 and len(cur) > 0:
-            icp(pre.T, cur.T)
-        previous = points
-        if i > 10:
+            rotation, transform = icp(pre.T, cur.T)
+            degrees = degrees + rotation_to_degrees(rotation)
+            if math.sqrt(transform[0] ** 2 + transform[1] ** 2) >= 50:
+                slide = slide + transform
+                previous = points
+            print(slide)
+        if i == 2:
+            previous = points
+        if i > 100:
             break
+    print(degrees, slide)
     # stop RPlidar
     lidar.stop()
     lidar.stop_motor()

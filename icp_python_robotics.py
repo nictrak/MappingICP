@@ -10,7 +10,7 @@ import numpy as np
 
 #  ICP parameters
 EPS = 0.1
-MAX_ITER = 10
+MAX_ITER = 30
 
 show_animation = True
 
