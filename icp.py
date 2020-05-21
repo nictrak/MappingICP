@@ -8,7 +8,8 @@ def icp(previous_points, current_points):
 
 
 def rotation_to_degrees(rotation):
-    return math.acos(rotation[0][0]) * 180 / math.pi
+    return math.fabs(math.asin(rotation[0][1]) * 180 / math.pi)
+
 
 
 

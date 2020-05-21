@@ -9,8 +9,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 #  ICP parameters
-EPS = 0.1
-MAX_ITER = 30
+EPS = 1
+MAX_ITER = 100
 
 show_animation = True
 

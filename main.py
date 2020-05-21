@@ -45,7 +45,7 @@ def main():
     # setup value
     points = np.array([[], []])
     previous = np.array([[], []])
-    degrees = 0
+    rotate = IDENTITY
     slide = np.array([0, 0])
     grid_x = np.linspace(MIN_RANGE, MAX_RANGE, GRID_POINTS)
     grid_y = np.linspace(MIN_RANGE, MAX_RANGE, GRID_POINTS)
@@ -54,20 +54,25 @@ def main():
     for i, scan in enumerate(lidar.iter_scans(min_len=60)):
         raw = filter(lambda element: element[1] >= 270 or element[1] <= 90, scan)
         points = transform_raw(raw)
-        grid = update_grid(grid, points.T, GRID_LENGTH, grid_x, grid_y, origin=slide)
         pre, cur = random_filter(previous, points)
         if len(pre) > 0 and len(cur) > 0:
+            is_change = False
             rotation, transform = icp(pre.T, cur.T)
-            degrees = degrees + rotation_to_degrees(rotation)
+            rotation_to_degrees(rotation)
+            if rotation_to_degrees(rotation) >= 1:
+                rotate = np.dot(rotate, rotation)
+                is_change = True
             if math.sqrt(transform[0] ** 2 + transform[1] ** 2) >= 50:
                 slide = slide + transform
+                is_change = True
+            if is_change:
                 previous = points
-            print(slide)
+        print(rotate, rotation_to_degrees(rotate))
+        grid = update_grid(grid, points.T, GRID_LENGTH, grid_x, grid_y, origin=slide, rotation=rotate)
         if i == 2:
             previous = points
-        if i > 100:
+        if i > 300:
             break
-    print(degrees, slide)
     # stop RPlidar
     lidar.stop()
     lidar.stop_motor()

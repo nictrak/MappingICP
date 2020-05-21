@@ -2,6 +2,9 @@ import math
 import numpy as np
 from functools import reduce
 
+IDENTITY = np.array([[1, 0],
+                     [0, 1]])
+
 
 def raw_to_point(raw):
     # define meaning of raw data
@@ -35,7 +38,7 @@ def _project_point_onto_origin(point, num, origin=np.array([0, 0])):
     return data
 
 
-def project_points_onto_origin(points, length, origin=np.array([0, 0])):
+def project_points_onto_origin(points_t, length, origin=np.array([0, 0])):
     """
     :param points: 2D points array
     :param length: length between points in line space
@@ -44,33 +47,30 @@ def project_points_onto_origin(points, length, origin=np.array([0, 0])):
     :param origin: the origin which we want to be projected onto
     :return: 2D points array of lines which are projection of inputs
     """
-    points_t = points.T
-    # point - origin
-    new_points = map(lambda point: point + origin, points_t)
     # find distances from origins
-    distances = map(lambda trans: math.sqrt(trans[0]**2 + trans[1]**2), points_t)
+    distances = map(lambda point: math.sqrt((point[0]-origin[0])**2 + (point[1]-origin[1])**2), points_t)
     # find number of points for line space
     nums = map(lambda dist: int(dist//length), distances)
     # project all
-    projections = reduce(lambda array0, array1: np.concatenate((array0, array1), axis=0), map(lambda p, n: _project_point_onto_origin(p, n, origin).T, new_points, nums)).T
+    projections = reduce(lambda array0, array1: np.concatenate((array0, array1), axis=0), map(lambda p, n: _project_point_onto_origin(p, n, origin).T, points_t, nums)).T
     return projections
 
 
-def cal_positive_grid(points, grid_x, grid_y, origin=np.array([0, 0])):
-    points_t = points.T
-    if len(points_t) == 0:
-        new_points_t = points
+def cal_positive_grid(points, grid_x, grid_y, origin=np.array([0, 0]), rotation=IDENTITY):
+    if len(points[0]) <= 0:
+        transform = points
     else:
-        new_points = np.array(list(map(lambda point: point + origin, points_t)))
-        new_points_t = new_points.T
-    positive_grid, _, _ = np.histogram2d(new_points_t[0], new_points_t[1], bins=[grid_x, grid_y])
-    return positive_grid * 0.1
+        transform_t = transform_origin(points, origin=origin, rotation=rotation)
+        transform = transform_t.T
+    positive_grid, _, _ = np.histogram2d(transform[0], transform[1], bins=[grid_x, grid_y])
+    return positive_grid * 0.5
 
 
-def cal_negative_grid(points, length, grid_x, grid_y, origin=np.array([0, 0])):
-    projections = project_points_onto_origin(points, length, origin)
+def cal_negative_grid(points, length, grid_x, grid_y, origin=np.array([0, 0]), rotation=IDENTITY):
+    transform_t = transform_origin(points, origin=origin, rotation=rotation)
+    projections = project_points_onto_origin(transform_t, length, origin)
     raw_grid, _, _ = np.histogram2d(projections[0], projections[1], bins=[grid_x, grid_y])
-    negative_grid = raw_grid * -0.1
+    negative_grid = raw_grid * -0.5
     return negative_grid
 
 
@@ -87,10 +87,18 @@ def transform_raw(raw):
     return np.array(list(map(raw_to_point, raw)))
 
 
-def update_grid(grid, points_t, length, grid_x, grid_y, origin=np.array([0, 0])):
-    return grid + cal_positive_grid(points_t, grid_x, grid_y, origin) + cal_negative_grid(points_t, length, grid_x, grid_y, origin)
+def update_grid(grid, points_t, length, grid_x, grid_y, origin=np.array([0, 0]), rotation=IDENTITY):
+    return grid + cal_positive_grid(points_t, grid_x, grid_y, origin, rotation) + cal_negative_grid(points_t, length, grid_x, grid_y, origin, rotation)
 
 
 def occupancy_grid_to_points(occupancy_grid, min_value, max_value, length, threshold=0.95):
     # TODO
     pass
+
+
+def transform_origin(points, origin=np.array([0, 0]), rotation=IDENTITY):
+    rotated = np.dot(rotation, points)
+    transform_t = np.array(list(map(lambda point: point + origin, rotated.T)))
+    return transform_t
+
+
