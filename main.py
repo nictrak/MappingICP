@@ -7,11 +7,11 @@ from icp import *
 import random
 
 PORT = 'COM24'
-MIN_RANGE = -8000
-MAX_RANGE = 8000
+MIN_RANGE = -6000
+MAX_RANGE = 6000
 GRID_LENGTH = 10
 GRID_POINTS = (MAX_RANGE-MIN_RANGE)//GRID_LENGTH
-
+TRACKER = np.array([1000, 0])
 
 def _do_random_remove(array, length):
     if len(array) <= length:
@@ -56,7 +56,7 @@ def main():
         raw = filter(lambda element: element[1] >= 270 or element[1] <= 90, scan)
         points = transform_raw(raw)
         pre, cur = random_filter(previous, points)
-        if len(pre) > 0 and len(cur) > 0:
+        if len(pre) > 0 and len(cur) > 0 and i % 5 == 0:
             is_change = False
             rotation, transform = icp(pre.T, cur.T)
             rotation_to_degrees(rotation)
@@ -64,7 +64,7 @@ def main():
                 rotate = np.dot(rotation, rotate)
                 is_change = True
             if math.sqrt(transform[0] ** 2 + transform[1] ** 2) >= 5:
-                slide = slide + transform
+                slide = slide + np.dot(rotate, transform)
                 is_change = True
             if is_change:
                 previous = points
@@ -75,13 +75,12 @@ def main():
             occupancy_grid = cal_occupancy_grid(grid)
             plt.clf()
             plt.pcolormesh(grid_x, grid_y, occupancy_grid)
-            plt.plot(slide[0], slide[1], 'ro')
-            plt.pause(0.1)
-
+            plt.plot(slide[1], slide[0], 'ro')
+            tracker = np.dot(rotate, TRACKER)
+            plt.plot(slide[1]+tracker[1], slide[0]+tracker[0], 'bo')
+            plt.pause(0.01)
         if i == 2:
             previous = points
-        if i > 50:
-            break
     # stop RPlidar
     lidar.stop()
     lidar.stop_motor()
