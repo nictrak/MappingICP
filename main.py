@@ -50,6 +50,7 @@ def main():
     grid_x = np.linspace(MIN_RANGE, MAX_RANGE, GRID_POINTS)
     grid_y = np.linspace(MIN_RANGE, MAX_RANGE, GRID_POINTS)
     grid = cal_positive_grid(points, grid_x, grid_y)
+    fig = plt.figure()
     # loop while mapping
     for i, scan in enumerate(lidar.iter_scans(min_len=60)):
         raw = filter(lambda element: element[1] >= 270 or element[1] <= 90, scan)
@@ -60,31 +61,31 @@ def main():
             rotation, transform = icp(pre.T, cur.T)
             rotation_to_degrees(rotation)
             if rotation_to_degrees(rotation) >= 1:
-                rotate = np.dot(rotate, rotation)
+                rotate = np.dot(rotation, rotate)
                 is_change = True
-            if math.sqrt(transform[0] ** 2 + transform[1] ** 2) >= 50:
+            if math.sqrt(transform[0] ** 2 + transform[1] ** 2) >= 5:
                 slide = slide + transform
                 is_change = True
             if is_change:
                 previous = points
-        print(rotate, rotation_to_degrees(rotate))
         grid = update_grid(grid, points.T, GRID_LENGTH, grid_x, grid_y, origin=slide, rotation=rotate)
+        # make occupancy grid
+        # illustrated
+        if i % 10 == 0:
+            occupancy_grid = cal_occupancy_grid(grid)
+            plt.clf()
+            plt.pcolormesh(grid_x, grid_y, occupancy_grid)
+            plt.plot(slide[0], slide[1], 'ro')
+            plt.pause(0.1)
+
         if i == 2:
             previous = points
-        if i > 300:
+        if i > 50:
             break
     # stop RPlidar
     lidar.stop()
     lidar.stop_motor()
     lidar.disconnect()
-    # make occupancy grid
-    occupancy_grid = cal_occupancy_grid(grid)
-    # illustrated
-    fig = plt.figure()
-    plt.pcolormesh(grid_x, grid_y, occupancy_grid)
-    plt.colorbar()
-    plt.grid()
-    plt.show()
     # file save
     save_override_map(occupancy_grid)
 
